@@ -1,6 +1,8 @@
 package com.conduit.common;
 
 import com.conduit.pipesegment.exception.DuplicatePipeSegmentCodeException;
+import com.conduit.inspection.exception.InspectionTaskNotFoundException;
+import com.conduit.inspection.exception.InvalidStateTransitionException;
 import com.conduit.pipesegment.exception.InvalidRequestException;
 import com.conduit.pipesegment.exception.PipeSegmentNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -42,13 +44,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "请求参数不合法");
     }
 
-    @ExceptionHandler(PipeSegmentNotFoundException.class)
-    public ResponseEntity<ApiError> handleNotFound(PipeSegmentNotFoundException ex) {
+    @ExceptionHandler({PipeSegmentNotFoundException.class, InspectionTaskNotFoundException.class})
+    public ResponseEntity<ApiError> handleNotFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(DuplicatePipeSegmentCodeException.class)
-    public ResponseEntity<ApiError> handleDuplicate(DuplicatePipeSegmentCodeException ex) {
+    @ExceptionHandler({DuplicatePipeSegmentCodeException.class, InvalidStateTransitionException.class})
+    public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 

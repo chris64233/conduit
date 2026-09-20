@@ -1,5 +1,6 @@
 package com.conduit.pipesegment;
 
+import com.conduit.inspection.InspectionTaskRepository;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,12 @@ class PipeSegmentControllerTest {
     @Autowired
     private PipeSegmentRepository repository;
 
+    @Autowired
+    private InspectionTaskRepository inspectionTaskRepository;
+
     @BeforeEach
     void cleanUp() {
+        inspectionTaskRepository.deleteAll();
         repository.deleteAll();
     }
 
