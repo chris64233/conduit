@@ -1,6 +1,12 @@
 package com.conduit.common;
 
 import com.conduit.pipesegment.exception.DuplicatePipeSegmentCodeException;
+import com.conduit.emergency.exception.BurstEventNotFoundException;
+import com.conduit.emergency.exception.DuplicateResourceCodeException;
+import com.conduit.emergency.exception.EmergencyResourceNotFoundException;
+import com.conduit.emergency.exception.InvalidBurstEventStateTransitionException;
+import com.conduit.emergency.exception.PipeSegmentNotActiveException;
+import com.conduit.emergency.exception.ResourceNotAvailableException;
 import com.conduit.hazard.exception.HazardNotFoundException;
 import com.conduit.hazard.exception.InspectionTaskNotCompletedException;
 import com.conduit.hazard.exception.InvalidHazardStateTransitionException;
@@ -48,13 +54,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({PipeSegmentNotFoundException.class, InspectionTaskNotFoundException.class,
-            HazardNotFoundException.class})
+            HazardNotFoundException.class, BurstEventNotFoundException.class,
+            EmergencyResourceNotFoundException.class})
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler({DuplicatePipeSegmentCodeException.class, InvalidStateTransitionException.class,
-            InspectionTaskNotCompletedException.class, InvalidHazardStateTransitionException.class})
+            InspectionTaskNotCompletedException.class, InvalidHazardStateTransitionException.class,
+            DuplicateResourceCodeException.class, PipeSegmentNotActiveException.class,
+            ResourceNotAvailableException.class, InvalidBurstEventStateTransitionException.class})
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
