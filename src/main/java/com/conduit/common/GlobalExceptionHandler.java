@@ -1,6 +1,9 @@
 package com.conduit.common;
 
 import com.conduit.pipesegment.exception.DuplicatePipeSegmentCodeException;
+import com.conduit.hazard.exception.HazardNotFoundException;
+import com.conduit.hazard.exception.InspectionTaskNotCompletedException;
+import com.conduit.hazard.exception.InvalidHazardStateTransitionException;
 import com.conduit.inspection.exception.InspectionTaskNotFoundException;
 import com.conduit.inspection.exception.InvalidStateTransitionException;
 import com.conduit.pipesegment.exception.InvalidRequestException;
@@ -44,12 +47,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "请求参数不合法");
     }
 
-    @ExceptionHandler({PipeSegmentNotFoundException.class, InspectionTaskNotFoundException.class})
+    @ExceptionHandler({PipeSegmentNotFoundException.class, InspectionTaskNotFoundException.class,
+            HazardNotFoundException.class})
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler({DuplicatePipeSegmentCodeException.class, InvalidStateTransitionException.class})
+    @ExceptionHandler({DuplicatePipeSegmentCodeException.class, InvalidStateTransitionException.class,
+            InspectionTaskNotCompletedException.class, InvalidHazardStateTransitionException.class})
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
