@@ -14,7 +14,8 @@ public record BurstEventResponse(
         String reporter,
         BurstEventStatus status,
         String resolution,
-        List<EmergencyResourceResponse> resources
+        List<EmergencyResourceResponse> resources,
+        List<ReassignmentRecordResponse> reassignments
 ) {
 
     public static BurstEventResponse from(BurstEvent event) {
@@ -28,6 +29,9 @@ public record BurstEventResponse(
                 event.getResolution(),
                 event.getResources().stream()
                         .map(EmergencyResourceResponse::from)
+                        .toList(),
+                event.getReassignments().stream()
+                        .map(ReassignmentRecordResponse::from)
                         .toList()
         );
     }

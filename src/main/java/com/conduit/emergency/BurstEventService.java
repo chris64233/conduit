@@ -3,6 +3,8 @@ package com.conduit.emergency;
 import com.conduit.emergency.dto.BurstEventCreateRequest;
 import com.conduit.emergency.dto.BurstEventResponse;
 import com.conduit.emergency.dto.BurstEventTransitionRequest;
+import com.conduit.emergency.dto.ReassignmentRequest;
+import com.conduit.emergency.exception.BurstEventNotDispatchedException;
 import com.conduit.emergency.exception.BurstEventNotFoundException;
 import com.conduit.emergency.exception.EmergencyResourceNotFoundException;
 import com.conduit.emergency.exception.InvalidBurstEventStateTransitionException;
@@ -77,6 +79,35 @@ public class BurstEventService {
         } else {
             throw new InvalidBurstEventStateTransitionException(current, target);
         }
+        return BurstEventResponse.from(burstEventRepository.save(event));
+    }
+
+    @Transactional
+    public BurstEventResponse reassign(Long id, ReassignmentRequest request) {
+        BurstEvent event = burstEventRepository.findById(id)
+                .orElseThrow(() -> new BurstEventNotFoundException(id));
+        if (event.getStatus() != BurstEventStatus.DISPATCHED) {
+            throw new BurstEventNotDispatchedException(id);
+        }
+        List<Long> resourceIds = request.resourceIds();
+        if (resourceIds == null || resourceIds.isEmpty()) {
+            throw new InvalidRequestException("改派时至少选择一个应急资源");
+        }
+        Set<Long> distinctIds = new LinkedHashSet<>(resourceIds);
+        Set<Long> currentIds = new LinkedHashSet<>();
+        for (EmergencyResource resource : event.getResources()) {
+            currentIds.add(resource.getId());
+        }
+        List<EmergencyResource> targetResources = new ArrayList<>();
+        for (Long resourceId : distinctIds) {
+            EmergencyResource resource = resourceRepository.findById(resourceId)
+                    .orElseThrow(() -> new EmergencyResourceNotFoundException(resourceId));
+            if (!currentIds.contains(resourceId) && resource.getStatus() != ResourceStatus.AVAILABLE) {
+                throw new ResourceNotAvailableException(resourceId);
+            }
+            targetResources.add(resource);
+        }
+        event.reassign(targetResources, request.operator().trim(), request.reason().trim());
         return BurstEventResponse.from(burstEventRepository.save(event));
     }
 

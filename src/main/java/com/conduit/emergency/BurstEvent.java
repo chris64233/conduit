@@ -1,6 +1,7 @@
 package com.conduit.emergency;
 
 import com.conduit.pipesegment.PipeSegment;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,11 +14,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "burst_events")
@@ -54,6 +58,10 @@ public class BurstEvent {
             inverseJoinColumns = @JoinColumn(name = "resource_id"))
     @OrderBy("id")
     private List<EmergencyResource> resources = new ArrayList<>();
+
+    @OneToMany(mappedBy = "burstEvent", cascade = CascadeType.ALL)
+    @OrderBy("operatedAt ASC, id ASC")
+    private List<ReassignmentRecord> reassignments = new ArrayList<>();
 
     protected BurstEvent() {
     }
@@ -98,12 +106,44 @@ public class BurstEvent {
         return resources;
     }
 
+    public List<ReassignmentRecord> getReassignments() {
+        return reassignments;
+    }
+
     public void dispatch(List<EmergencyResource> dispatchedResources) {
         this.status = BurstEventStatus.DISPATCHED;
         for (EmergencyResource resource : dispatchedResources) {
             resource.markBusy();
             this.resources.add(resource);
         }
+    }
+
+    public void reassign(List<EmergencyResource> targetResources, String operator, String reason) {
+        List<Long> previousResourceIds = this.resources.stream()
+                .map(EmergencyResource::getId)
+                .toList();
+        Set<Long> targetIds = new HashSet<>();
+        for (EmergencyResource resource : targetResources) {
+            targetIds.add(resource.getId());
+        }
+        for (EmergencyResource resource : this.resources) {
+            if (!targetIds.contains(resource.getId())) {
+                resource.markAvailable();
+            }
+        }
+        Set<Long> currentIds = new HashSet<>(previousResourceIds);
+        for (EmergencyResource resource : targetResources) {
+            if (!currentIds.contains(resource.getId())) {
+                resource.markBusy();
+            }
+        }
+        this.resources.clear();
+        this.resources.addAll(targetResources);
+        List<Long> newResourceIds = targetResources.stream()
+                .map(EmergencyResource::getId)
+                .toList();
+        this.reassignments.add(new ReassignmentRecord(this, operator, reason,
+                previousResourceIds, newResourceIds));
     }
 
     public void resolve(String resolution) {

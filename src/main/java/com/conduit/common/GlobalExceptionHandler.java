@@ -1,6 +1,7 @@
 package com.conduit.common;
 
 import com.conduit.pipesegment.exception.DuplicatePipeSegmentCodeException;
+import com.conduit.emergency.exception.BurstEventNotDispatchedException;
 import com.conduit.emergency.exception.BurstEventNotFoundException;
 import com.conduit.emergency.exception.DuplicateResourceCodeException;
 import com.conduit.emergency.exception.EmergencyResourceNotFoundException;
@@ -63,7 +64,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({DuplicatePipeSegmentCodeException.class, InvalidStateTransitionException.class,
             InspectionTaskNotCompletedException.class, InvalidHazardStateTransitionException.class,
             DuplicateResourceCodeException.class, PipeSegmentNotActiveException.class,
-            ResourceNotAvailableException.class, InvalidBurstEventStateTransitionException.class})
+            ResourceNotAvailableException.class, InvalidBurstEventStateTransitionException.class,
+            BurstEventNotDispatchedException.class})
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }

@@ -3,6 +3,7 @@ package com.conduit.emergency;
 import com.conduit.emergency.dto.BurstEventCreateRequest;
 import com.conduit.emergency.dto.BurstEventResponse;
 import com.conduit.emergency.dto.BurstEventTransitionRequest;
+import com.conduit.emergency.dto.ReassignmentRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,5 +38,11 @@ public class BurstEventController {
     public BurstEventResponse transition(@PathVariable Long id,
                                          @Valid @RequestBody BurstEventTransitionRequest request) {
         return service.transition(id, request);
+    }
+
+    @PostMapping("/{id}/reassignment")
+    public BurstEventResponse reassign(@PathVariable Long id,
+                                       @Valid @RequestBody ReassignmentRequest request) {
+        return service.reassign(id, request);
     }
 }
