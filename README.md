@@ -18,3 +18,11 @@ Conduit 是一个面向城市地下管网的 Spring Boot 后端项目，用于�
 启动应用：
 
     ./mvnw spring-boot:run
+
+## 应急资源转移
+
+已派发（DISPATCHED）的爆管事件之间可通过 `POST /api/resource-transfers` 转移应急资源，请求体包含
+`sourceEventId`、`targetEventId`、`resourceCodes`、`requestNo`、`operator`、`reason`。
+资源按编号（大小写不敏感、自动去重）匹配，必须为 BUSY 且当前归属源事件，转移后源事件至少保留一个资源。
+`requestNo` 用于幂等：重复提交返回首次结果，同号不同内容返回 409。转移审计随事件详情
+（`GET /api/burst-events/{id}` 的 `resourceTransfers`）按操作时间正序返回。

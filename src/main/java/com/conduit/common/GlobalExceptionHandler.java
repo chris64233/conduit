@@ -4,10 +4,13 @@ import com.conduit.pipesegment.exception.DuplicatePipeSegmentCodeException;
 import com.conduit.emergency.exception.BurstEventNotDispatchedException;
 import com.conduit.emergency.exception.BurstEventNotFoundException;
 import com.conduit.emergency.exception.DuplicateResourceCodeException;
+import com.conduit.emergency.exception.DuplicateTransferRequestNoException;
+import com.conduit.emergency.exception.EmergencyResourceCodeNotFoundException;
 import com.conduit.emergency.exception.EmergencyResourceNotFoundException;
 import com.conduit.emergency.exception.InvalidBurstEventStateTransitionException;
 import com.conduit.emergency.exception.PipeSegmentNotActiveException;
 import com.conduit.emergency.exception.ResourceNotAvailableException;
+import com.conduit.emergency.exception.ResourceTransferConflictException;
 import com.conduit.hazard.exception.HazardNotFoundException;
 import com.conduit.hazard.exception.InspectionTaskNotCompletedException;
 import com.conduit.hazard.exception.InvalidHazardStateTransitionException;
@@ -18,6 +21,8 @@ import com.conduit.pipesegment.exception.PipeSegmentNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -56,7 +61,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({PipeSegmentNotFoundException.class, InspectionTaskNotFoundException.class,
             HazardNotFoundException.class, BurstEventNotFoundException.class,
-            EmergencyResourceNotFoundException.class})
+            EmergencyResourceNotFoundException.class, EmergencyResourceCodeNotFoundException.class})
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
@@ -65,9 +70,15 @@ public class GlobalExceptionHandler {
             InspectionTaskNotCompletedException.class, InvalidHazardStateTransitionException.class,
             DuplicateResourceCodeException.class, PipeSegmentNotActiveException.class,
             ResourceNotAvailableException.class, InvalidBurstEventStateTransitionException.class,
-            BurstEventNotDispatchedException.class})
+            BurstEventNotDispatchedException.class, ResourceTransferConflictException.class,
+            DuplicateTransferRequestNoException.class})
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler({PessimisticLockingFailureException.class, CannotAcquireLockException.class})
+    public ResponseEntity<ApiError> handleLockFailure(RuntimeException ex) {
+        return build(HttpStatus.CONFLICT, "资源正在被其他请求处理，请稍后重试");
     }
 
     @ExceptionHandler(Exception.class)

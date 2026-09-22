@@ -146,6 +146,17 @@ public class BurstEvent {
                 previousResourceIds, newResourceIds));
     }
 
+    public void transferOut(List<EmergencyResource> transferredResources) {
+        this.resources.removeAll(transferredResources);
+    }
+
+    public void transferIn(List<EmergencyResource> transferredResources) {
+        for (EmergencyResource resource : transferredResources) {
+            resource.markBusy();
+            this.resources.add(resource);
+        }
+    }
+
     public void resolve(String resolution) {
         this.status = BurstEventStatus.RESOLVED;
         this.resolution = resolution;

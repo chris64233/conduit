@@ -29,13 +29,16 @@ public class BurstEventService {
     private final BurstEventRepository burstEventRepository;
     private final PipeSegmentRepository pipeSegmentRepository;
     private final EmergencyResourceRepository resourceRepository;
+    private final ResourceTransferRecordRepository transferRecordRepository;
 
     public BurstEventService(BurstEventRepository burstEventRepository,
                              PipeSegmentRepository pipeSegmentRepository,
-                             EmergencyResourceRepository resourceRepository) {
+                             EmergencyResourceRepository resourceRepository,
+                             ResourceTransferRecordRepository transferRecordRepository) {
         this.burstEventRepository = burstEventRepository;
         this.pipeSegmentRepository = pipeSegmentRepository;
         this.resourceRepository = resourceRepository;
+        this.transferRecordRepository = transferRecordRepository;
     }
 
     @Transactional
@@ -51,13 +54,13 @@ public class BurstEventService {
                 request.level(),
                 request.reporter().trim()
         );
-        return BurstEventResponse.from(burstEventRepository.save(event));
+        return toResponse(burstEventRepository.save(event));
     }
 
     @Transactional(readOnly = true)
     public BurstEventResponse getById(Long id) {
         return burstEventRepository.findById(id)
-                .map(BurstEventResponse::from)
+                .map(this::toResponse)
                 .orElseThrow(() -> new BurstEventNotFoundException(id));
     }
 
@@ -79,7 +82,7 @@ public class BurstEventService {
         } else {
             throw new InvalidBurstEventStateTransitionException(current, target);
         }
-        return BurstEventResponse.from(burstEventRepository.save(event));
+        return toResponse(burstEventRepository.save(event));
     }
 
     @Transactional
@@ -108,7 +111,12 @@ public class BurstEventService {
             targetResources.add(resource);
         }
         event.reassign(targetResources, request.operator().trim(), request.reason().trim());
-        return BurstEventResponse.from(burstEventRepository.save(event));
+        return toResponse(burstEventRepository.save(event));
+    }
+
+    private BurstEventResponse toResponse(BurstEvent event) {
+        return BurstEventResponse.from(event,
+                transferRecordRepository.findByEventIdOrderByOperatedAtAsc(event.getId()));
     }
 
     private List<EmergencyResource> loadAvailableResources(List<Long> resourceIds) {
