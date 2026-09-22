@@ -1,6 +1,7 @@
 package com.conduit.emergency;
 
 import com.conduit.emergency.dto.BurstEventCreateRequest;
+import com.conduit.emergency.dto.BurstEventReassignRequest;
 import com.conduit.emergency.dto.BurstEventResponse;
 import com.conduit.emergency.dto.BurstEventTransitionRequest;
 import jakarta.validation.Valid;
@@ -37,5 +38,11 @@ public class BurstEventController {
     public BurstEventResponse transition(@PathVariable Long id,
                                          @Valid @RequestBody BurstEventTransitionRequest request) {
         return service.transition(id, request);
+    }
+
+    @PostMapping("/{id}/reassignment")
+    public BurstEventResponse reassign(@PathVariable Long id,
+                                       @Valid @RequestBody BurstEventReassignRequest request) {
+        return service.reassign(id, request);
     }
 }
