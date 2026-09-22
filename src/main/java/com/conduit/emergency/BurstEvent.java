@@ -153,4 +153,24 @@ public class BurstEvent {
             resource.markAvailable();
         }
     }
+
+    public boolean containsResource(EmergencyResource resource) {
+        for (EmergencyResource current : this.resources) {
+            if (current.getId().equals(resource.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void transferResourcesOut(List<EmergencyResource> transferredResources) {
+        this.resources.removeAll(transferredResources);
+    }
+
+    public void transferResourcesIn(List<EmergencyResource> transferredResources) {
+        for (EmergencyResource resource : transferredResources) {
+            resource.markBusy();
+            this.resources.add(resource);
+        }
+    }
 }

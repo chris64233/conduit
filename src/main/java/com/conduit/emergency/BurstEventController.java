@@ -4,6 +4,8 @@ import com.conduit.emergency.dto.BurstEventCreateRequest;
 import com.conduit.emergency.dto.BurstEventResponse;
 import com.conduit.emergency.dto.BurstEventTransitionRequest;
 import com.conduit.emergency.dto.ReassignmentRequest;
+import com.conduit.emergency.dto.ResourceTransferRequestPayload;
+import com.conduit.emergency.dto.ResourceTransferResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class BurstEventController {
 
     private final BurstEventService service;
+    private final ResourceTransferService transferService;
 
-    public BurstEventController(BurstEventService service) {
+    public BurstEventController(BurstEventService service, ResourceTransferService transferService) {
         this.service = service;
+        this.transferService = transferService;
     }
 
     @PostMapping
@@ -44,5 +48,10 @@ public class BurstEventController {
     public BurstEventResponse reassign(@PathVariable Long id,
                                        @Valid @RequestBody ReassignmentRequest request) {
         return service.reassign(id, request);
+    }
+
+    @PostMapping("/resource-transfers")
+    public ResourceTransferResponse transfer(@Valid @RequestBody ResourceTransferRequestPayload request) {
+        return transferService.transfer(request);
     }
 }

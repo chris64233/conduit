@@ -8,6 +8,8 @@ import com.conduit.emergency.exception.EmergencyResourceNotFoundException;
 import com.conduit.emergency.exception.InvalidBurstEventStateTransitionException;
 import com.conduit.emergency.exception.PipeSegmentNotActiveException;
 import com.conduit.emergency.exception.ResourceNotAvailableException;
+import com.conduit.emergency.exception.ResourceTransferConflictException;
+import com.conduit.emergency.exception.SameBurstEventTransferException;
 import com.conduit.hazard.exception.HazardNotFoundException;
 import com.conduit.hazard.exception.InspectionTaskNotCompletedException;
 import com.conduit.hazard.exception.InvalidHazardStateTransitionException;
@@ -65,9 +67,14 @@ public class GlobalExceptionHandler {
             InspectionTaskNotCompletedException.class, InvalidHazardStateTransitionException.class,
             DuplicateResourceCodeException.class, PipeSegmentNotActiveException.class,
             ResourceNotAvailableException.class, InvalidBurstEventStateTransitionException.class,
-            BurstEventNotDispatchedException.class})
+            BurstEventNotDispatchedException.class, ResourceTransferConflictException.class})
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(SameBurstEventTransferException.class)
+    public ResponseEntity<ApiError> handleSameEventTransfer(SameBurstEventTransferException ex) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
