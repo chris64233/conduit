@@ -11,6 +11,7 @@ import com.conduit.emergency.exception.InvalidBurstEventStateTransitionException
 import com.conduit.emergency.exception.PipeSegmentNotActiveException;
 import com.conduit.emergency.exception.ResourceNotAvailableException;
 import com.conduit.emergency.exception.ResourceTransferConflictException;
+import com.conduit.emergency.exception.ResourceTransferNotFoundException;
 import com.conduit.hazard.exception.HazardNotFoundException;
 import com.conduit.hazard.exception.InspectionTaskNotCompletedException;
 import com.conduit.hazard.exception.InvalidHazardStateTransitionException;
@@ -61,7 +62,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({PipeSegmentNotFoundException.class, InspectionTaskNotFoundException.class,
             HazardNotFoundException.class, BurstEventNotFoundException.class,
-            EmergencyResourceNotFoundException.class, EmergencyResourceCodeNotFoundException.class})
+            EmergencyResourceNotFoundException.class, EmergencyResourceCodeNotFoundException.class,
+            ResourceTransferNotFoundException.class})
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }

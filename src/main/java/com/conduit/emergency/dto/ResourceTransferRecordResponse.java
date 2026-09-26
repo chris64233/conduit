@@ -13,10 +13,15 @@ public record ResourceTransferRecordResponse(
         List<String> resourceCodes,
         String operator,
         String reason,
-        Instant operatedAt
+        Instant operatedAt,
+        boolean reversed
 ) {
 
     public static ResourceTransferRecordResponse from(ResourceTransferRecord record) {
+        return from(record, false);
+    }
+
+    public static ResourceTransferRecordResponse from(ResourceTransferRecord record, boolean reversed) {
         return new ResourceTransferRecordResponse(
                 record.getId(),
                 record.getRequestNo(),
@@ -25,7 +30,8 @@ public record ResourceTransferRecordResponse(
                 record.getResourceCodes(),
                 record.getOperator(),
                 record.getReason(),
-                record.getOperatedAt()
+                record.getOperatedAt(),
+                reversed
         );
     }
 }
