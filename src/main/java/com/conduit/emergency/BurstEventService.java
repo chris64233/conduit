@@ -30,15 +30,18 @@ public class BurstEventService {
     private final PipeSegmentRepository pipeSegmentRepository;
     private final EmergencyResourceRepository resourceRepository;
     private final ResourceTransferRecordRepository transferRecordRepository;
+    private final ResourceTransferReversalRecordRepository reversalRecordRepository;
 
     public BurstEventService(BurstEventRepository burstEventRepository,
                              PipeSegmentRepository pipeSegmentRepository,
                              EmergencyResourceRepository resourceRepository,
-                             ResourceTransferRecordRepository transferRecordRepository) {
+                             ResourceTransferRecordRepository transferRecordRepository,
+                             ResourceTransferReversalRecordRepository reversalRecordRepository) {
         this.burstEventRepository = burstEventRepository;
         this.pipeSegmentRepository = pipeSegmentRepository;
         this.resourceRepository = resourceRepository;
         this.transferRecordRepository = transferRecordRepository;
+        this.reversalRecordRepository = reversalRecordRepository;
     }
 
     @Transactional
@@ -116,7 +119,8 @@ public class BurstEventService {
 
     private BurstEventResponse toResponse(BurstEvent event) {
         return BurstEventResponse.from(event,
-                transferRecordRepository.findByEventIdOrderByOperatedAtAsc(event.getId()));
+                transferRecordRepository.findByEventIdOrderByOperatedAtAsc(event.getId()),
+                reversalRecordRepository.findByEventIdOrderByOperatedAtAsc(event.getId()));
     }
 
     private List<EmergencyResource> loadAvailableResources(List<Long> resourceIds) {

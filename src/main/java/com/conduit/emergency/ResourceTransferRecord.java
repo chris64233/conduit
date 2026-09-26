@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -59,7 +60,7 @@ public class ResourceTransferRecord {
         this.resourceCodes = join(resourceCodes);
         this.operator = operator;
         this.reason = reason;
-        this.operatedAt = Instant.now();
+        this.operatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
     }
 
     public Long getId() {

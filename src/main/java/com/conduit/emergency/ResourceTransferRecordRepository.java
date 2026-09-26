@@ -18,6 +18,12 @@ public interface ResourceTransferRecordRepository extends JpaRepository<Resource
     Optional<ResourceTransferRecord> findDetailByRequestNo(@Param("requestNo") String requestNo);
 
     @Query("SELECT record FROM ResourceTransferRecord record "
+            + "JOIN FETCH record.sourceEvent source "
+            + "JOIN FETCH record.targetEvent target "
+            + "WHERE record.id = :id")
+    Optional<ResourceTransferRecord> findDetailById(@Param("id") Long id);
+
+    @Query("SELECT record FROM ResourceTransferRecord record "
             + "WHERE record.sourceEvent.id = :eventId OR record.targetEvent.id = :eventId "
             + "ORDER BY record.operatedAt ASC, record.id ASC")
     List<ResourceTransferRecord> findByEventIdOrderByOperatedAtAsc(@Param("eventId") Long eventId);

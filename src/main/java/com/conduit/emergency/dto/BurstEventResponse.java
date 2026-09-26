@@ -4,6 +4,7 @@ import com.conduit.emergency.BurstEvent;
 import com.conduit.emergency.BurstEventLevel;
 import com.conduit.emergency.BurstEventStatus;
 import com.conduit.emergency.ResourceTransferRecord;
+import com.conduit.emergency.ResourceTransferReversalRecord;
 
 import java.util.List;
 
@@ -17,10 +18,12 @@ public record BurstEventResponse(
         String resolution,
         List<EmergencyResourceResponse> resources,
         List<ReassignmentRecordResponse> reassignments,
-        List<ResourceTransferRecordResponse> resourceTransfers
+        List<ResourceTransferRecordResponse> resourceTransfers,
+        List<ResourceTransferReversalResponse> resourceTransferReversals
 ) {
 
-    public static BurstEventResponse from(BurstEvent event, List<ResourceTransferRecord> transferRecords) {
+    public static BurstEventResponse from(BurstEvent event, List<ResourceTransferRecord> transferRecords,
+                                          List<ResourceTransferReversalRecord> reversalRecords) {
         return new BurstEventResponse(
                 event.getId(),
                 event.getPipeSegment().getId(),
@@ -37,6 +40,9 @@ public record BurstEventResponse(
                         .toList(),
                 transferRecords.stream()
                         .map(ResourceTransferRecordResponse::from)
+                        .toList(),
+                reversalRecords.stream()
+                        .map(ResourceTransferReversalResponse::from)
                         .toList()
         );
     }

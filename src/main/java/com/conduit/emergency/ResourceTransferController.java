@@ -2,7 +2,10 @@ package com.conduit.emergency;
 
 import com.conduit.emergency.dto.ResourceTransferRecordResponse;
 import com.conduit.emergency.dto.ResourceTransferRequest;
+import com.conduit.emergency.dto.ResourceTransferReversalRequest;
+import com.conduit.emergency.dto.ResourceTransferReversalResponse;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,5 +24,11 @@ public class ResourceTransferController {
     @PostMapping
     public ResourceTransferRecordResponse transfer(@Valid @RequestBody ResourceTransferRequest request) {
         return service.transfer(request);
+    }
+
+    @PostMapping("/{transferId}/reversals")
+    public ResourceTransferReversalResponse reverse(@PathVariable Long transferId,
+                                                    @Valid @RequestBody ResourceTransferReversalRequest request) {
+        return service.reverse(transferId, request);
     }
 }
