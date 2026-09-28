@@ -8,9 +8,9 @@ import com.conduit.emergency.ResourceTransferReversalRecord;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 public record BurstEventResponse(
         Long id,
@@ -28,9 +28,11 @@ public record BurstEventResponse(
 
     public static BurstEventResponse from(BurstEvent event, List<ResourceTransferRecord> transferRecords,
                                           List<ResourceTransferReversalRecord> reversalRecords) {
-        Set<Long> reversedTransferIds = new HashSet<>();
+        Map<Long, List<String>> reversedCodesByTransferId = new HashMap<>();
         for (ResourceTransferReversalRecord reversal : reversalRecords) {
-            reversedTransferIds.add(reversal.getTransfer().getId());
+            reversedCodesByTransferId
+                    .computeIfAbsent(reversal.getTransfer().getId(), key -> new ArrayList<>())
+                    .addAll(reversal.getResourceCodes());
         }
         List<ResourceTransferTimelineEntry> timeline = new ArrayList<>();
         for (ResourceTransferRecord record : transferRecords) {
@@ -57,7 +59,7 @@ public record BurstEventResponse(
                         .toList(),
                 transferRecords.stream()
                         .map(record -> ResourceTransferRecordResponse.from(
-                                record, reversedTransferIds.contains(record.getId())))
+                                record, reversedCodesByTransferId.getOrDefault(record.getId(), List.of())))
                         .toList(),
                 timeline
         );

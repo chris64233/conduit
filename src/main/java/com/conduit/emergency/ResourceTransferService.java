@@ -16,11 +16,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ResourceTransferService {
@@ -150,25 +152,26 @@ public class ResourceTransferService {
 
     public ResourceTransferReversalResponse reverse(Long transferId, ResourceTransferReversalRequest request) {
         String requestNo = request.requestNo().trim();
+        List<String> codeKeys = normalizeCodes(request.resourceCodes());
         String operator = request.operator().trim();
         String reason = request.reason().trim();
 
         Optional<ResourceTransferReversalRecord> replay = reversalRecordRepository.findDetailByRequestNo(requestNo);
         if (replay.isPresent()) {
-            return replayReversalOrConflict(replay.get(), transferId, operator, reason);
+            return replayReversalOrConflict(replay.get(), transferId, codeKeys, operator, reason);
         }
 
         try {
             return transactionTemplate.execute(status ->
-                    doReverse(transferId, requestNo, operator, reason));
+                    doReverse(transferId, requestNo, codeKeys, operator, reason));
         } catch (DataIntegrityViolationException ex) {
             ResourceTransferReversalRecord raced = reversalRecordRepository.findDetailByRequestNo(requestNo)
                     .orElseThrow(() -> ex);
-            return replayReversalOrConflict(raced, transferId, operator, reason);
+            return replayReversalOrConflict(raced, transferId, codeKeys, operator, reason);
         }
     }
 
-    private ResourceTransferReversalResponse doReverse(Long transferId, String requestNo,
+    private ResourceTransferReversalResponse doReverse(Long transferId, String requestNo, List<String> codeKeys,
                                                        String operator, String reason) {
         ResourceTransferRecord transfer = transferRecordRepository.findById(transferId)
                 .orElseThrow(() -> new ResourceTransferNotFoundException(transferId));
@@ -184,17 +187,32 @@ public class ResourceTransferService {
         if (targetEvent.getStatus() != BurstEventStatus.DISPATCHED) {
             throw new ResourceTransferConflictException("目标事件不在已派发状态，不能撤销转移: " + targetEventId);
         }
-        if (reversalRecordRepository.existsByTransferId(transferId)) {
-            throw new ResourceTransferConflictException("该转移已被撤销，不能重复撤销: " + transferId);
-        }
 
         Optional<ResourceTransferReversalRecord> concurrentReplay =
                 reversalRecordRepository.findDetailByRequestNo(requestNo);
         if (concurrentReplay.isPresent()) {
-            return replayReversalOrConflict(concurrentReplay.get(), transferId, operator, reason);
+            return replayReversalOrConflict(concurrentReplay.get(), transferId, codeKeys, operator, reason);
         }
 
-        List<String> codeKeys = transfer.getResourceCodes();
+        List<String> transferableCodes = transfer.getResourceCodes();
+        for (String codeKey : codeKeys) {
+            if (!transferableCodes.contains(codeKey)) {
+                throw new ResourceTransferConflictException(
+                        "资源不属于该转移记录，不能撤销: " + codeKey);
+            }
+        }
+        Set<String> alreadyReversedCodes = new HashSet<>();
+        for (ResourceTransferReversalRecord existing
+                : reversalRecordRepository.findByTransferIdOrderByOperatedAtAsc(transferId)) {
+            alreadyReversedCodes.addAll(existing.getResourceCodes());
+        }
+        for (String codeKey : codeKeys) {
+            if (alreadyReversedCodes.contains(codeKey)) {
+                throw new ResourceTransferConflictException(
+                        "资源已撤销回迁，不能重复撤销: " + codeKey);
+            }
+        }
+
         Map<String, EmergencyResource> lockedResources = new HashMap<>();
         for (EmergencyResource resource : resourceRepository.findByCodeKeyInForUpdate(codeKeys)) {
             lockedResources.put(resource.getCodeKey(), resource);
@@ -226,15 +244,16 @@ public class ResourceTransferService {
         sourceEvent.transferIn(returnedResources);
         burstEventRepository.save(sourceEvent);
         ResourceTransferReversalRecord record = new ResourceTransferReversalRecord(
-                requestNo, transfer, operator, reason);
+                requestNo, transfer, codeKeys, operator, reason);
         reversalRecordRepository.saveAndFlush(record);
         return ResourceTransferReversalResponse.from(record);
     }
 
     private ResourceTransferReversalResponse replayReversalOrConflict(ResourceTransferReversalRecord record,
-                                                                      Long transferId, String operator,
-                                                                      String reason) {
+                                                                      Long transferId, List<String> codeKeys,
+                                                                      String operator, String reason) {
         boolean sameContent = record.getTransfer().getId().equals(transferId)
+                && record.getResourceCodes().equals(codeKeys)
                 && record.getOperator().equals(operator)
                 && record.getReason().equals(reason);
         if (!sameContent) {

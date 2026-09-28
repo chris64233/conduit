@@ -46,7 +46,7 @@ public record ResourceTransferTimelineEntry(
                 transfer.getId(),
                 transfer.getSourceEvent().getId(),
                 transfer.getTargetEvent().getId(),
-                transfer.getResourceCodes(),
+                record.getResourceCodes(),
                 record.getOperator(),
                 record.getReason(),
                 record.getOperatedAt()

@@ -24,7 +24,7 @@ public record ResourceTransferReversalResponse(
                 record.getTransfer().getId(),
                 record.getTransfer().getSourceEvent().getId(),
                 record.getTransfer().getTargetEvent().getId(),
-                record.getTransfer().getResourceCodes(),
+                record.getResourceCodes(),
                 record.getOperator(),
                 record.getReason(),
                 record.getOperatedAt()

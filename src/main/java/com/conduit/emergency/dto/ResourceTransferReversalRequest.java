@@ -1,12 +1,18 @@
 package com.conduit.emergency.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 public record ResourceTransferReversalRequest(
         @NotBlank(message = "requestNo 不能为空")
         @Size(max = 64, message = "requestNo 长度不能超过 64")
         String requestNo,
+
+        @NotEmpty(message = "resourceCodes 不能为空")
+        List<@NotBlank(message = "resourceCodes 不能包含空白编号") String> resourceCodes,
 
         @NotBlank(message = "operator 不能为空")
         @Size(max = 64, message = "operator 长度不能超过 64")

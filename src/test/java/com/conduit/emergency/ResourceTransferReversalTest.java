@@ -174,10 +174,11 @@ class ResourceTransferReversalTest {
         return body.isBlank() ? null : objectMapper.readTree(body);
     }
 
-    private JsonNode reverse(Long transferId, String requestNo, String operator, String reason,
-                             int expectedStatus) throws Exception {
+    private JsonNode reverse(Long transferId, List<String> resourceCodes, String requestNo, String operator,
+                             String reason, int expectedStatus) throws Exception {
         Map<String, Object> request = new HashMap<>();
         request.put("requestNo", requestNo);
+        request.put("resourceCodes", resourceCodes);
         request.put("operator", operator);
         request.put("reason", reason);
         MvcResult result = mockMvc.perform(post("/api/resource-transfers/{transferId}/reversal", transferId)
@@ -224,7 +225,7 @@ class ResourceTransferReversalTest {
         assertEventResourceIds(sourceEventId, List.of(first));
         assertEventResourceIds(targetEventId, List.of(second, third));
 
-        JsonNode reversal = reverse(transferId, newRequestNo(), "王五", "增援结束，退回资源", 200);
+        JsonNode reversal = reverse(transferId, List.of("RV-002"), newRequestNo(), "王五", "增援结束，退回资源", 200);
 
         Assertions.assertNotNull(reversal.get("id"));
         Assertions.assertNotNull(reversal.get("requestNo"));
@@ -258,12 +259,12 @@ class ResourceTransferReversalTest {
                 newRequestNo(), "李四", "跨事件支援", 200);
         Long transferId = transferResponse.get("id").asLong();
 
-        reverse(999999L, newRequestNo(), "王五", "转移记录不存在", 404);
+        reverse(999999L, List.of("RV-102"), newRequestNo(), "王五", "转移记录不存在", 404);
 
         resolveEvent(targetEventId);
-        reverse(transferId, newRequestNo(), "王五", "目标事件已完成", 409);
+        reverse(transferId, List.of("RV-102"), newRequestNo(), "王五", "目标事件已完成", 409);
         resolveEvent(sourceEventId);
-        reverse(transferId, newRequestNo(), "王五", "源事件也已完成", 409);
+        reverse(transferId, List.of("RV-102"), newRequestNo(), "王五", "源事件也已完成", 409);
 
         Assertions.assertEquals(0, reversalRecordRepository.count());
     }
@@ -286,12 +287,12 @@ class ResourceTransferReversalTest {
                 newRequestNo(), "李四", "先转到目标事件", 200);
         transfer(targetEventId, thirdEventId, List.of("RV-202"),
                 newRequestNo(), "李四", "再转到第三事件", 200);
-        reverse(movedOn.get("id").asLong(), newRequestNo(), "王五", "资源已转往其他事件", 409);
+        reverse(movedOn.get("id").asLong(), List.of("RV-202"), newRequestNo(), "王五", "资源已转往其他事件", 409);
 
         JsonNode reassignedAway = transfer(sourceEventId, targetEventId, List.of("RV-201"),
                 newRequestNo(), "李四", "再次转入目标事件", 200);
         reassignEvent(targetEventId, List.of(third));
-        reverse(reassignedAway.get("id").asLong(), newRequestNo(), "王五", "资源已被改派释放", 409);
+        reverse(reassignedAway.get("id").asLong(), List.of("RV-201"), newRequestNo(), "王五", "资源已被改派释放", 409);
 
         mockMvc.perform(get("/api/emergency-resources/{id}", first))
                 .andExpect(jsonPath("$.status").value("AVAILABLE"));
@@ -314,7 +315,7 @@ class ResourceTransferReversalTest {
         transfer(targetEventId, sourceEventId, List.of("RV-303"),
                 newRequestNo(), "李四", "目标事件原有资源反向转出", 200);
 
-        reverse(transferResponse.get("id").asLong(), newRequestNo(), "王五", "撤销会掏空目标事件", 409);
+        reverse(transferResponse.get("id").asLong(), List.of("RV-302"), newRequestNo(), "王五", "撤销会掏空目标事件", 409);
 
         assertEventResourceIds(sourceEventId, List.of(first, third));
         assertEventResourceIds(targetEventId, List.of(second));
@@ -335,8 +336,8 @@ class ResourceTransferReversalTest {
                 newRequestNo(), "李四", "跨事件支援", 200);
         Long transferId = transferResponse.get("id").asLong();
 
-        reverse(transferId, newRequestNo(), "王五", "首次撤销", 200);
-        reverse(transferId, newRequestNo(), "王五", "重复撤销", 409);
+        reverse(transferId, List.of("RV-402"), newRequestNo(), "王五", "首次撤销", 200);
+        reverse(transferId, List.of("RV-402"), newRequestNo(), "王五", "重复撤销", 409);
 
         Assertions.assertEquals(1, reversalRecordRepository.count());
         assertEventResourceIds(sourceEventId, List.of(first, second));
@@ -358,8 +359,8 @@ class ResourceTransferReversalTest {
         Long transferId = transferResponse.get("id").asLong();
 
         String requestNo = newRequestNo();
-        JsonNode firstResponse = reverse(transferId, requestNo, "王五", "撤销转移", 200);
-        JsonNode retryResponse = reverse(transferId, requestNo, " 王五 ", " 撤销转移 ", 200);
+        JsonNode firstResponse = reverse(transferId, List.of("RV-502"), requestNo, "王五", "撤销转移", 200);
+        JsonNode retryResponse = reverse(transferId, List.of(" rv-502 "), requestNo, " 王五 ", " 撤销转移 ", 200);
 
         Assertions.assertEquals(firstResponse.get("id").asLong(), retryResponse.get("id").asLong());
         Assertions.assertEquals(firstResponse.get("operatedAt").asText(),
@@ -386,11 +387,12 @@ class ResourceTransferReversalTest {
                 newRequestNo(), "李四", "第二笔转移", 200);
 
         String requestNo = newRequestNo();
-        reverse(firstTransfer.get("id").asLong(), requestNo, "王五", "撤销第一笔", 200);
+        reverse(firstTransfer.get("id").asLong(), List.of("RV-602"), requestNo, "王五", "撤销第一笔", 200);
 
-        reverse(firstTransfer.get("id").asLong(), requestNo, "赵六", "更换操作人", 409);
-        reverse(firstTransfer.get("id").asLong(), requestNo, "王五", "更换原因", 409);
-        reverse(secondTransfer.get("id").asLong(), requestNo, "王五", "更换转移记录", 409);
+        reverse(firstTransfer.get("id").asLong(), List.of("RV-602"), requestNo, "赵六", "更换操作人", 409);
+        reverse(firstTransfer.get("id").asLong(), List.of("RV-602"), requestNo, "王五", "更换原因", 409);
+        reverse(firstTransfer.get("id").asLong(), List.of("RV-603"), requestNo, "王五", "更换资源集合", 409);
+        reverse(secondTransfer.get("id").asLong(), List.of("RV-602"), requestNo, "王五", "更换转移记录", 409);
 
         Assertions.assertEquals(1, reversalRecordRepository.count());
         assertEventResourceIds(sourceEventId, List.of(first, second));
@@ -413,7 +415,7 @@ class ResourceTransferReversalTest {
 
         transfer(targetEventId, sourceEventId, List.of("RV-703"),
                 newRequestNo(), "李四", "目标事件原有资源转出", 200);
-        reverse(transferId, newRequestNo(), "王五", "撤销会掏空目标事件", 409);
+        reverse(transferId, List.of("RV-702"), newRequestNo(), "王五", "撤销会掏空目标事件", 409);
 
         JsonNode sourceDetail = getEventDetail(sourceEventId);
         Assertions.assertEquals("DISPATCHED", sourceDetail.get("status").asText());
@@ -451,6 +453,7 @@ class ResourceTransferReversalTest {
             futures.add(pool.submit(() -> {
                 Map<String, Object> request = new HashMap<>();
                 request.put("requestNo", newRequestNo());
+                request.put("resourceCodes", List.of("RV-802"));
                 request.put("operator", "王五");
                 request.put("reason", "并发撤销同一笔转移");
                 barrier.await();
@@ -496,7 +499,7 @@ class ResourceTransferReversalTest {
         JsonNode firstTransfer = transfer(eventA, eventB, List.of("RV-901"),
                 newRequestNo(), "李四", "第一次转出", 200);
         transfer(eventB, eventA, List.of("RV-904"), newRequestNo(), "王五", "反向转入", 200);
-        JsonNode reversal = reverse(firstTransfer.get("id").asLong(),
+        JsonNode reversal = reverse(firstTransfer.get("id").asLong(), List.of("RV-901"),
                 newRequestNo(), "赵六", "撤销第一次转出", 200);
 
         JsonNode detailA = getEventDetail(eventA);
@@ -557,10 +560,12 @@ class ResourceTransferReversalTest {
                 newRequestNo(), "李四", "跨事件支援", 200);
         Long transferId = transferResponse.get("id").asLong();
 
-        reverse(transferId, " ", "王五", "空白请求号", 400);
-        reverse(transferId, newRequestNo(), " ", "空白操作人", 400);
-        reverse(transferId, newRequestNo(), "王五", "  ", 400);
-        reverse(transferId, "R".repeat(65), "王五", "请求号超长", 400);
+        reverse(transferId, List.of("RV-1002"), " ", "王五", "空白请求号", 400);
+        reverse(transferId, List.of(), newRequestNo(), "王五", "资源列表为空", 400);
+        reverse(transferId, List.of(" "), newRequestNo(), "王五", "空白资源编号", 400);
+        reverse(transferId, List.of("RV-1002"), newRequestNo(), " ", "空白操作人", 400);
+        reverse(transferId, List.of("RV-1002"), newRequestNo(), "王五", "  ", 400);
+        reverse(transferId, List.of("RV-1002"), "R".repeat(65), "王五", "请求号超长", 400);
 
         Assertions.assertEquals(0, reversalRecordRepository.count());
         assertEventResourceIds(sourceEventId, List.of(first));

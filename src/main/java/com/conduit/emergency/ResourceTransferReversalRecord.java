@@ -13,11 +13,12 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 
 @Entity
 @Table(name = "burst_event_resource_transfer_reversals", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_transfer_reversal_request_no", columnNames = "request_no"),
-        @UniqueConstraint(name = "uk_transfer_reversal_transfer_id", columnNames = "transfer_id")
+        @UniqueConstraint(name = "uk_transfer_reversal_request_no", columnNames = "request_no")
 })
 public class ResourceTransferReversalRecord {
 
@@ -32,6 +33,9 @@ public class ResourceTransferReversalRecord {
     @JoinColumn(name = "transfer_id", nullable = false)
     private ResourceTransferRecord transfer;
 
+    @Column(name = "resource_codes", nullable = false, length = 2048)
+    private String resourceCodes;
+
     @Column(name = "operator_name", nullable = false, length = 64)
     private String operator;
 
@@ -45,9 +49,10 @@ public class ResourceTransferReversalRecord {
     }
 
     public ResourceTransferReversalRecord(String requestNo, ResourceTransferRecord transfer,
-                                          String operator, String reason) {
+                                          List<String> resourceCodes, String operator, String reason) {
         this.requestNo = requestNo;
         this.transfer = transfer;
+        this.resourceCodes = String.join(",", resourceCodes);
         this.operator = operator;
         this.reason = reason;
         this.operatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
@@ -63,6 +68,13 @@ public class ResourceTransferReversalRecord {
 
     public ResourceTransferRecord getTransfer() {
         return transfer;
+    }
+
+    public List<String> getResourceCodes() {
+        if (resourceCodes == null || resourceCodes.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(resourceCodes.split(",")).toList();
     }
 
     public String getOperator() {
