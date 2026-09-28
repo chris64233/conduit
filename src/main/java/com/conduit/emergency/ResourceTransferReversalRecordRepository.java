@@ -10,7 +10,11 @@ import java.util.Optional;
 public interface ResourceTransferReversalRecordRepository
         extends JpaRepository<ResourceTransferReversalRecord, Long> {
 
-    boolean existsByTransferId(Long transferId);
+    @Query("SELECT DISTINCT reversal FROM ResourceTransferReversalRecord reversal "
+            + "JOIN FETCH reversal.items item "
+            + "WHERE reversal.transfer.id = :transferId "
+            + "ORDER BY reversal.operatedAt ASC, reversal.id ASC")
+    List<ResourceTransferReversalRecord> findDetailsByTransferId(@Param("transferId") Long transferId);
 
     @Query("SELECT reversal FROM ResourceTransferReversalRecord reversal "
             + "JOIN FETCH reversal.transfer transfer "

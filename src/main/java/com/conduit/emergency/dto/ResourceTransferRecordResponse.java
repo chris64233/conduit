@@ -14,24 +14,33 @@ public record ResourceTransferRecordResponse(
         String operator,
         String reason,
         Instant operatedAt,
-        boolean reversed
+        boolean reversed,
+        List<String> reversedResourceCodes,
+        List<String> remainingReversibleResourceCodes
 ) {
 
     public static ResourceTransferRecordResponse from(ResourceTransferRecord record) {
-        return from(record, false);
+        return from(record, List.of());
     }
 
-    public static ResourceTransferRecordResponse from(ResourceTransferRecord record, boolean reversed) {
+    public static ResourceTransferRecordResponse from(ResourceTransferRecord record,
+                                                      List<String> reversedResourceCodes) {
+        List<String> transferCodes = record.getResourceCodes();
+        List<String> remaining = transferCodes.stream()
+                .filter(code -> !reversedResourceCodes.contains(code))
+                .toList();
         return new ResourceTransferRecordResponse(
                 record.getId(),
                 record.getRequestNo(),
                 record.getSourceEvent().getId(),
                 record.getTargetEvent().getId(),
-                record.getResourceCodes(),
+                transferCodes,
                 record.getOperator(),
                 record.getReason(),
                 record.getOperatedAt(),
-                reversed
+                remaining.isEmpty(),
+                reversedResourceCodes,
+                remaining
         );
     }
 }

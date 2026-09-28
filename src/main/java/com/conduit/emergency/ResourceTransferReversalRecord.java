@@ -1,5 +1,6 @@
 package com.conduit.emergency;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -8,16 +9,20 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Entity
 @Table(name = "burst_event_resource_transfer_reversals", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_transfer_reversal_request_no", columnNames = "request_no"),
-        @UniqueConstraint(name = "uk_transfer_reversal_transfer_id", columnNames = "transfer_id")
+        @UniqueConstraint(name = "uk_transfer_reversal_request_no", columnNames = "request_no")
 })
 public class ResourceTransferReversalRecord {
 
@@ -32,6 +37,9 @@ public class ResourceTransferReversalRecord {
     @JoinColumn(name = "transfer_id", nullable = false)
     private ResourceTransferRecord transfer;
 
+    @Column(name = "resource_codes", nullable = false, length = 2048)
+    private String resourceCodes;
+
     @Column(name = "operator_name", nullable = false, length = 64)
     private String operator;
 
@@ -41,16 +49,25 @@ public class ResourceTransferReversalRecord {
     @Column(name = "operated_at", nullable = false)
     private Instant operatedAt;
 
+    @OneToMany(mappedBy = "reversal", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
+    private List<ResourceTransferReversalItem> items = new ArrayList<>();
+
     protected ResourceTransferReversalRecord() {
     }
 
     public ResourceTransferReversalRecord(String requestNo, ResourceTransferRecord transfer,
-                                          String operator, String reason) {
+                                          List<String> resourceCodes, String operator, String reason) {
         this.requestNo = requestNo;
         this.transfer = transfer;
+        this.resourceCodes = join(resourceCodes);
         this.operator = operator;
         this.reason = reason;
         this.operatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+    }
+
+    public void addItem(ResourceTransferReversalItem item) {
+        this.items.add(item);
     }
 
     public Long getId() {
@@ -65,6 +82,14 @@ public class ResourceTransferReversalRecord {
         return transfer;
     }
 
+    public List<String> getResourceCodes() {
+        return split(resourceCodes);
+    }
+
+    public List<ResourceTransferReversalItem> getItems() {
+        return items;
+    }
+
     public String getOperator() {
         return operator;
     }
@@ -75,5 +100,16 @@ public class ResourceTransferReversalRecord {
 
     public Instant getOperatedAt() {
         return operatedAt;
+    }
+
+    private static String join(List<String> codes) {
+        return String.join(",", codes);
+    }
+
+    private static List<String> split(String codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(codes.split(",")).toList();
     }
 }

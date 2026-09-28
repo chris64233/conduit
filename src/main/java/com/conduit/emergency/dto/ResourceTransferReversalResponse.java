@@ -12,19 +12,22 @@ public record ResourceTransferReversalResponse(
         Long sourceEventId,
         Long targetEventId,
         List<String> resourceCodes,
+        List<String> remainingReversibleCodes,
         String operator,
         String reason,
         Instant operatedAt
 ) {
 
-    public static ResourceTransferReversalResponse from(ResourceTransferReversalRecord record) {
+    public static ResourceTransferReversalResponse from(ResourceTransferReversalRecord record,
+                                                        List<String> remainingReversibleCodes) {
         return new ResourceTransferReversalResponse(
                 record.getId(),
                 record.getRequestNo(),
                 record.getTransfer().getId(),
                 record.getTransfer().getSourceEvent().getId(),
                 record.getTransfer().getTargetEvent().getId(),
-                record.getTransfer().getResourceCodes(),
+                record.getResourceCodes(),
+                remainingReversibleCodes,
                 record.getOperator(),
                 record.getReason(),
                 record.getOperatedAt()
